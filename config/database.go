@@ -4,6 +4,7 @@ import (
 	"blog-api/src/model"
 	"fmt"
 	"os"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -28,9 +29,13 @@ func getDsn() string {
 }
 
 func CreateConnection() (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(getDsn()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	gormConfig := &gorm.Config{
+		PrepareStmt:            true,
+		SkipDefaultTransaction: true,
+		Logger:                 logger.Default.LogMode(logger.Silent),
+	}
+
+	db, err := gorm.Open(mysql.Open(getDsn()), gormConfig)
 
 	db.AutoMigrate(
 		&model.User{},
@@ -41,6 +46,16 @@ func CreateConnection() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sqlDB, err := db.DB()
+
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxOpenConns(10000)
+	sqlDB.SetMaxIdleConns(10000)
+	sqlDB.SetConnMaxLifetime(10 * time.Minute)
 
 	return db, nil
 }

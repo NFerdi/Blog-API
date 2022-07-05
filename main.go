@@ -4,6 +4,7 @@ import (
 	"blog-api/config"
 	"blog-api/src"
 	"log"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
@@ -23,5 +24,14 @@ func main() {
 
 	server := src.InitServer(db)
 
-	server.Run()
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		server.Run()
+	}()
+
+	wg.Wait()
 }
